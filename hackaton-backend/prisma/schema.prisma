@@ -1,0 +1,107 @@
+// Arquivo: prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- MODELOS PRINCIPAIS ---
+
+model Family {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  citizens  Citizen[]
+  createdAt DateTime  @default(now())
+}
+
+model Citizen {
+  id                Int      @id @default(autoincrement())
+  name              String
+  cpf               String   @unique
+  rg                String?
+  birthDate         DateTime
+  birthCity         String?
+  birthHealthUnit   String?
+  fatherName        String?
+  motherName        String
+  address           String
+  
+  // Relações do Cidadão
+  family            Family?      @relation(fields: [familyId], references: [id])
+  familyId          Int?
+  examRequests      ExamRequest[]
+  enrollments       Enrollment[]
+
+  createdAt         DateTime @default(now())
+}
+
+model ExamRequest {
+  id             Int      @id @default(autoincrement())
+  patientName    String
+  description    String   @db.Text
+  status         Status   @default(TODO)
+  priorityScore  Int      @default(0)
+  
+  // Relação com Cidadão
+  citizen        Citizen? @relation(fields: [citizenId], references: [id])
+  citizenId      Int?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Demand {
+  id          Int      @id @default(autoincrement())
+  title       String
+  recipient   String
+  startDate   DateTime
+  dueDate     String
+  address     String?
+  priority    String
+  status      String   @default("TODO")
+  report      String?
+  duration    String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SportProject {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  minAge       Int
+  maxAge       Int
+  
+  // Relação com Matrículas
+  enrollments  Enrollment[]
+  
+  createdAt    DateTime @default(now())
+}
+
+model Enrollment {
+  id             Int          @id @default(autoincrement())
+  
+  // Relações (Muitos-para-Muitos entre Cidadão e Projeto)
+  citizen        Citizen      @relation(fields: [citizenId], references: [id])
+  citizenId      Int
+  sportProject   SportProject @relation(fields: [sportProjectId], references: [id])
+  sportProjectId Int
+  
+  enrolledAt     DateTime     @default(now())
+
+  @@unique([citizenId, sportProjectId])
+}
+
+
+// --- ENUMS ---
+
+enum Status {
+  TODO
+  IN_PROGRESS
+  DONE
+}
